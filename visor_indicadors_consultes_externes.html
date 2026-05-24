@@ -1,0 +1,364 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.visor { padding: 0.75rem; }
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.meta {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+select, .refresh-btn {
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid #dbe2ea;
+  background: white;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.refresh-btn:hover, select:hover { background: #f1f5f9; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 0.75rem;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.card-id {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+.card-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+  line-height: 1.2;
+  flex: 1;
+}
+
+.card-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.card-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.card-target {
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+.bar-bg {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-pill {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.trend {
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+.ok-id, .ok-pill { background: #EAF3DE; color: #3B6D11; }
+.warn-id, .warn-pill { background: #FAEEDA; color: #854F0B; }
+.bad-id, .bad-pill { background: #FCEBEB; color: #A32D2D; }
+
+.ok-bar { background: #639922; }
+.warn-bar { background: #EF9F27; }
+.bad-bar { background: #E24B4A; }
+
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.65rem;
+  text-align: center;
+}
+
+.summary-label {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.summary-num {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.s-ok { color: #3B6D11; }
+.s-warn { color: #854F0B; }
+.s-bad { color: #A32D2D; }
+
+.timestamp {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: right;
+  margin-top: 0.5rem;
+}
+</style>
+
+<div class="visor">
+  <div style="margin-bottom:1rem;">
+  <div style="font-size:30px; font-weight:700; color:#1e293b;">
+    Visor d'indicadors de seguiment de consultes externes
+  </div>
+</div>
+  <div class="top-bar">
+    <div>
+      <div style="font-size:16px; font-weight:600;">Indicadors de seguiment</div>
+      <div class="meta">Parc Taulí · Dades de mostra simulades</div>
+    </div>
+
+    <div class="controls">
+      <select id="sel-servei" onchange="refresh()">
+        <option value="all">Tots els serveis</option>
+        <option value="DER">Dermatologia</option>
+        <option value="CAR">Cardiologia</option>
+        <option value="TRA">Traumatologia</option>
+        <option value="ONC">Oncologia</option>
+        <option value="NEU">Neurologia</option>
+        <option value="DIG">Digestiu</option>
+      </select>
+
+      <button class="refresh-btn" onclick="refresh()">↻ Actualitzar</button>
+    </div>
+  </div>
+
+  <div class="summary-strip">
+    <div class="summary-card">
+      <div class="summary-label">Indicadors OK</div>
+      <div class="summary-num s-ok" id="cnt-ok">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Atenció</div>
+      <div class="summary-num s-warn" id="cnt-warn">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Fora d'objectiu</div>
+      <div class="summary-num s-bad" id="cnt-bad">—</div>
+    </div>
+  </div>
+
+  <div class="grid" id="cards-grid"></div>
+  <div class="timestamp" id="ts"></div>
+</div>
+
+<script>
+const SERVEIS = {
+  all: "Tots els serveis",
+  DER: "Dermatologia",
+  CAR: "Cardiologia",
+  TRA: "Traumatologia",
+  ONC: "Oncologia",
+  NEU: "Neurologia",
+  DIG: "Digestiu"
+};
+
+const INDICADORS = [
+  { id:"I1", nom:"Ocupació d'agenda", objectiu:80, objectiuLabel:"80% - 85%", mode:"range", rangeMin:80, rangeMax:85, unit:"%", min:55, max:98 },
+  { id:"I2", nom:"Compliment agenda prevista vs. real", objectiu:90, objectiuLabel:"≥ 90%", mode:"min", unit:"%", min:65, max:99 },
+  { id:"I3", nom:"Primeres visites rebutjades AP", objectiu:15, objectiuLabel:"≥ 15%", mode:"min", unit:"%", min:5, max:35 },
+  { id:"I4.1", nom:"Ocupació capa 1", objectiu:60, objectiuLabel:"rang reservat ±5%", mode:"range", rangeMin:55, rangeMax:65, unit:"%", min:35, max:85 },
+  { id:"I4.2", nom:"Ocupació capa 2", objectiu:30, objectiuLabel:"rang reservat ±5%", mode:"range", rangeMin:25, rangeMax:35, unit:"%", min:10, max:55 },
+  { id:"I4.3", nom:"Ocupació capa 3", objectiu:10, objectiuLabel:"rang reservat ±5%", mode:"range", rangeMin:5, rangeMax:15, unit:"%", min:0, max:30 },
+  { id:"I5", nom:"Forats buits no justificats", objectiu:10, objectiuLabel:"≤ 10%", mode:"max", unit:"%", min:2, max:28 },
+  { id:"I6", nom:"Reprogramacions per manca de proves", objectiu:5, objectiuLabel:"≤ 5%", mode:"max", unit:"%", min:1, max:18 }
+];
+
+function rnd(min, max) {
+  return Math.round(Math.random() * (max - min) + min);
+}
+
+function getStatus(ind, val) {
+  if (ind.mode === "min") {
+    if (val >= ind.objectiu) return "ok";
+    if (val >= ind.objectiu - 10) return "warn";
+    return "bad";
+  }
+
+  if (ind.mode === "max") {
+    if (val <= ind.objectiu) return "ok";
+    if (val <= ind.objectiu + 5) return "warn";
+    return "bad";
+  }
+
+  if (ind.mode === "range") {
+    if (val >= ind.rangeMin && val <= ind.rangeMax) return "ok";
+    if (val >= ind.rangeMin - 8 && val <= ind.rangeMax + 8) return "warn";
+    return "bad";
+  }
+}
+
+function statusLabel(s) {
+  if (s === "ok") return "Dins l'objectiu";
+  if (s === "warn") return "Atenció";
+  return "Fora d'objectiu";
+}
+
+function barPct(ind, val) {
+  if (ind.mode === "max") return Math.min(100, (val / (ind.objectiu * 2.5)) * 100);
+  return Math.min(100, val);
+}
+
+function trendStr() {
+  const diff = Math.round((Math.random() - 0.5) * 6);
+  if (diff > 0) return `↑ +${diff}pp`;
+  if (diff < 0) return `↓ ${diff}pp`;
+  return `— estable`;
+}
+
+function valorPerServei(ind, servei) {
+  let val = rnd(ind.min, ind.max);
+
+  if (servei !== "all") {
+    val = Math.max(ind.min, Math.min(ind.max, val + rnd(-8, 8)));
+  }
+
+  return val;
+}
+
+function refresh() {
+  let ok = 0, warn = 0, bad = 0;
+  const grid = document.getElementById('cards-grid');
+  const servei = document.getElementById('sel-servei').value;
+
+  grid.innerHTML = '';
+
+  INDICADORS.forEach(ind => {
+    const val = valorPerServei(ind, servei);
+    const status = getStatus(ind, val);
+
+    if (status === "ok") ok++;
+    else if (status === "warn") warn++;
+    else bad++;
+
+    const pct = barPct(ind, val);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    card.innerHTML = `
+      <div class="card-top">
+        <span class="card-id ${status}-id">${ind.id}</span>
+        <span class="card-title">${ind.nom}</span>
+      </div>
+
+      <div class="card-value-row">
+        <span class="card-value" style="color:${status === 'ok' ? '#3B6D11' : status === 'warn' ? '#854F0B' : '#A32D2D'}">${val}${ind.unit}</span>
+        <span class="card-target">objectiu ${ind.objectiuLabel}</span>
+      </div>
+
+      <div class="bar-bg">
+        <div class="bar-fill ${status}-bar" style="width:${pct}%"></div>
+      </div>
+
+      <div class="card-footer">
+        <span class="status-pill ${status}-pill">${statusLabel(status)}</span>
+        <span class="trend">${trendStr()} vs. mes anterior</span>
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+
+  document.getElementById('cnt-ok').textContent = ok;
+  document.getElementById('cnt-warn').textContent = warn;
+  document.getElementById('cnt-bad').textContent = bad;
+
+  const now = new Date();
+  document.getElementById('ts').textContent =
+    `Servei: ${SERVEIS[servei]} · ${now.toLocaleDateString('ca-ES')} ${now.toLocaleTimeString('ca-ES', {hour:'2-digit', minute:'2-digit'})} · Dades simulades`;
+}
+
+refresh();
+</script>
