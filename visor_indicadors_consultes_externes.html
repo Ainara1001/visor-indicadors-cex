@@ -54,6 +54,7 @@ select, .refresh-btn {
 
 .refresh-btn:hover, select:hover { background: #f1f5f9; }
 
+/* Graella de targetes d'indicadors: 4 columnes */
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -61,6 +62,7 @@ select, .refresh-btn {
   margin-bottom: 0.75rem;
 }
 
+/* Cada targeta representa un indicador */
 .card {
   background: white;
   border: 1px solid #e2e8f0;
@@ -109,6 +111,7 @@ select, .refresh-btn {
   color: #94a3b8;
 }
 
+/* Barra de progrés visual de l'indicador */
 .bar-bg {
   height: 8px;
   border-radius: 999px;
@@ -141,6 +144,7 @@ select, .refresh-btn {
   color: #94a3b8;
 }
 
+/* Colors per estat: ok (verd), warn (taronja), bad (vermell) */
 .ok-id, .ok-pill { background: #EAF3DE; color: #3B6D11; }
 .warn-id, .warn-pill { background: #FAEEDA; color: #854F0B; }
 .bad-id, .bad-pill { background: #FCEBEB; color: #A32D2D; }
@@ -149,6 +153,7 @@ select, .refresh-btn {
 .warn-bar { background: #EF9F27; }
 .bad-bar { background: #E24B4A; }
 
+/* Resum global: comptadors d'indicadors per estat */
 .summary-strip {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -189,10 +194,11 @@ select, .refresh-btn {
 
 <div class="visor">
   <div style="margin-bottom:1rem;">
-  <div style="font-size:30px; font-weight:700; color:#1e293b;">
-    Visor d'indicadors de seguiment de consultes externes
+    <div style="font-size:30px; font-weight:700; color:#1e293b;">
+      Visor d'indicadors de seguiment de consultes externes
+    </div>
   </div>
-</div>
+
   <div class="top-bar">
     <div>
       <div style="font-size:16px; font-weight:600;">Indicadors de seguiment</div>
@@ -200,7 +206,8 @@ select, .refresh-btn {
     </div>
 
     <div class="controls">
-      <select id="sel-servei" onchange="refresh()">
+      <!-- Filtre per servei: en canviar el valor es recalculen tots els indicadors -->
+      <select id="sel-servei" onchange="actualitzar()">
         <option value="all">Tots els serveis</option>
         <option value="DER">Dermatologia</option>
         <option value="CAR">Cardiologia</option>
@@ -210,10 +217,11 @@ select, .refresh-btn {
         <option value="DIG">Digestiu</option>
       </select>
 
-      <button class="refresh-btn" onclick="refresh()">↻ Actualitzar</button>
+      <button class="refresh-btn" onclick="actualitzar()">↻ Actualitzar</button>
     </div>
   </div>
 
+  <!-- Resum global: quants indicadors estan en cada estat -->
   <div class="summary-strip">
     <div class="summary-card">
       <div class="summary-label">Indicadors OK</div>
@@ -229,11 +237,14 @@ select, .refresh-btn {
     </div>
   </div>
 
+  <!-- Contenidor on es generen dinàmicament les targetes de cada indicador -->
   <div class="grid" id="cards-grid"></div>
   <div class="timestamp" id="ts"></div>
 </div>
 
 <script>
+
+// Llista de serveis disponibles per al filtre
 const SERVEIS = {
   all: "Tots els serveis",
   DER: "Dermatologia",
@@ -244,121 +255,146 @@ const SERVEIS = {
   DIG: "Digestiu"
 };
 
+// Definició dels 8 indicadors operatius (I1 a I6, amb I4 desglossada en 3 capes)
+// Cada indicador té un mode de càlcul d'estat:
+//   "min"   → com més alt millor (p.ex. compliment d'agenda)
+//   "max"   → com més baix millor (p.ex. forats buits)
+//   "range" → s'ha de mantenir dins d'un rang (p.ex. ocupació d'agenda 80-85%)
 const INDICADORS = [
-  { id:"I1", nom:"Ocupació d'agenda", objectiu:80, objectiuLabel:"80% - 85%", mode:"range", rangeMin:80, rangeMax:85, unit:"%", min:55, max:98 },
-  { id:"I2", nom:"Compliment agenda prevista vs. real", objectiu:90, objectiuLabel:"≥ 90%", mode:"min", unit:"%", min:65, max:99 },
-  { id:"I3", nom:"Primeres visites rebutjades AP", objectiu:15, objectiuLabel:"≥ 15%", mode:"min", unit:"%", min:5, max:35 },
-  { id:"I4.1", nom:"Ocupació capa 1", objectiu:60, objectiuLabel:"rang reservat ±5%", mode:"range", rangeMin:55, rangeMax:65, unit:"%", min:35, max:85 },
-  { id:"I4.2", nom:"Ocupació capa 2", objectiu:30, objectiuLabel:"rang reservat ±5%", mode:"range", rangeMin:25, rangeMax:35, unit:"%", min:10, max:55 },
-  { id:"I4.3", nom:"Ocupació capa 3", objectiu:10, objectiuLabel:"rang reservat ±5%", mode:"range", rangeMin:5, rangeMax:15, unit:"%", min:0, max:30 },
-  { id:"I5", nom:"Forats buits no justificats", objectiu:10, objectiuLabel:"≤ 10%", mode:"max", unit:"%", min:2, max:28 },
-  { id:"I6", nom:"Reprogramacions per manca de proves", objectiu:5, objectiuLabel:"≤ 5%", mode:"max", unit:"%", min:1, max:18 }
+  { id:"I1",  nom:"Ocupació d'agenda",                    objectiu:80, objectiuLabel:"80% - 85%",       mode:"range", rangeMin:80,  rangeMax:85,  unit:"%", min:55, max:98 },
+  { id:"I2",  nom:"Compliment agenda prevista vs. real",  objectiu:90, objectiuLabel:"≥ 90%",           mode:"min",   unit:"%", min:65, max:99 },
+  { id:"I3",  nom:"Primeres visites rebutjades AP",       objectiu:15, objectiuLabel:"≥ 15%",           mode:"min",   unit:"%", min:5,  max:35 },
+  { id:"I4.1",nom:"Ocupació capa 1",                      objectiu:60, objectiuLabel:"rang reservat ±5%",mode:"range", rangeMin:55,  rangeMax:65,  unit:"%", min:35, max:85 },
+  { id:"I4.2",nom:"Ocupació capa 2",                      objectiu:30, objectiuLabel:"rang reservat ±5%",mode:"range", rangeMin:25,  rangeMax:35,  unit:"%", min:10, max:55 },
+  { id:"I4.3",nom:"Ocupació capa 3",                      objectiu:10, objectiuLabel:"rang reservat ±5%",mode:"range", rangeMin:5,   rangeMax:15,  unit:"%", min:0,  max:30 },
+  { id:"I5",  nom:"Forats buits no justificats",          objectiu:10, objectiuLabel:"≤ 10%",           mode:"max",   unit:"%", min:2,  max:28 },
+  { id:"I6",  nom:"Reprogramacions per manca de proves",  objectiu:5,  objectiuLabel:"≤ 5%",            mode:"max",   unit:"%", min:1,  max:18 }
 ];
 
-function rnd(min, max) {
+// Genera un nombre enter aleatori entre min i max (inclusiu)
+function nombreAleatori(min, max) {
   return Math.round(Math.random() * (max - min) + min);
 }
 
-function getStatus(ind, val) {
+// Calcula l'estat d'un indicador ("ok", "warn" o "bad") segons el seu mode i valor
+function obtenirEstat(ind, val) {
+
+  // Mode "min": l'indicador ha de superar un valor mínim (com més alt millor)
   if (ind.mode === "min") {
-    if (val >= ind.objectiu) return "ok";
+    if (val >= ind.objectiu)      return "ok";
     if (val >= ind.objectiu - 10) return "warn";
     return "bad";
   }
 
+  // Mode "max": l'indicador ha d'estar per sota d'un valor màxim (com més baix millor)
   if (ind.mode === "max") {
-    if (val <= ind.objectiu) return "ok";
+    if (val <= ind.objectiu)     return "ok";
     if (val <= ind.objectiu + 5) return "warn";
     return "bad";
   }
 
+  // Mode "range": l'indicador ha de mantenir-se dins d'un rang definit (±tolerància)
   if (ind.mode === "range") {
-    if (val >= ind.rangeMin && val <= ind.rangeMax) return "ok";
+    if (val >= ind.rangeMin && val <= ind.rangeMax)         return "ok";
     if (val >= ind.rangeMin - 8 && val <= ind.rangeMax + 8) return "warn";
     return "bad";
   }
 }
 
-function statusLabel(s) {
-  if (s === "ok") return "Dins l'objectiu";
-  if (s === "warn") return "Atenció";
+// Retorna el text llegible de l'estat per mostrar a la targeta
+function etiquetaEstat(estat) {
+  if (estat === "ok")   return "Dins l'objectiu";
+  if (estat === "warn") return "Atenció";
   return "Fora d'objectiu";
 }
 
-function barPct(ind, val) {
+// Calcula el percentatge de la barra visual de progrés de cada indicador
+// Els indicadors "max" s'escalen respecte al doble de l'objectiu per fer-ho visual
+function percentatgeBarra(ind, val) {
   if (ind.mode === "max") return Math.min(100, (val / (ind.objectiu * 2.5)) * 100);
   return Math.min(100, val);
 }
 
-function trendStr() {
+// Genera una variació aleatòria simulada respecte al mes anterior
+function tendencia() {
   const diff = Math.round((Math.random() - 0.5) * 6);
   if (diff > 0) return `↑ +${diff}pp`;
   if (diff < 0) return `↓ ${diff}pp`;
   return `— estable`;
 }
 
+// Simula el valor d'un indicador per a un servei concret
+// Si s'ha seleccionat un servei específic, s'afegeix una petita variació aleatòria
 function valorPerServei(ind, servei) {
-  let val = rnd(ind.min, ind.max);
-
+  let val = nombreAleatori(ind.min, ind.max);
   if (servei !== "all") {
-    val = Math.max(ind.min, Math.min(ind.max, val + rnd(-8, 8)));
+    val = Math.max(ind.min, Math.min(ind.max, val + nombreAleatori(-8, 8)));
   }
-
   return val;
 }
 
-function refresh() {
+// Funció principal: recalcula i repinta totes les targetes d'indicadors
+// S'executa en carregar la pàgina i cada vegada que es canvia el filtre de servei
+function actualitzar() {
   let ok = 0, warn = 0, bad = 0;
-  const grid = document.getElementById('cards-grid');
+  const grid   = document.getElementById('cards-grid');
   const servei = document.getElementById('sel-servei').value;
 
+  // Buidem la graella abans de repintar
   grid.innerHTML = '';
 
+  // Generem una targeta per a cada indicador
   INDICADORS.forEach(ind => {
-    const val = valorPerServei(ind, servei);
-    const status = getStatus(ind, val);
+    const val   = valorPerServei(ind, servei);
+    const estat = obtenirEstat(ind, val);
 
-    if (status === "ok") ok++;
-    else if (status === "warn") warn++;
-    else bad++;
+    // Actualitzem els comptadors del resum global
+    if (estat === "ok")        ok++;
+    else if (estat === "warn") warn++;
+    else                       bad++;
 
-    const pct = barPct(ind, val);
+    const pct = percentatgeBarra(ind, val);
 
-    const card = document.createElement('div');
-    card.className = 'card';
+    // Creem l'element HTML de la targeta i l'afegim a la graella
+    const targeta = document.createElement('div');
+    targeta.className = 'card';
 
-    card.innerHTML = `
+    targeta.innerHTML = `
       <div class="card-top">
-        <span class="card-id ${status}-id">${ind.id}</span>
+        <span class="card-id ${estat}-id">${ind.id}</span>
         <span class="card-title">${ind.nom}</span>
       </div>
 
       <div class="card-value-row">
-        <span class="card-value" style="color:${status === 'ok' ? '#3B6D11' : status === 'warn' ? '#854F0B' : '#A32D2D'}">${val}${ind.unit}</span>
+        <span class="card-value" style="color:${estat === 'ok' ? '#3B6D11' : estat === 'warn' ? '#854F0B' : '#A32D2D'}">${val}${ind.unit}</span>
         <span class="card-target">objectiu ${ind.objectiuLabel}</span>
       </div>
 
       <div class="bar-bg">
-        <div class="bar-fill ${status}-bar" style="width:${pct}%"></div>
+        <div class="bar-fill ${estat}-bar" style="width:${pct}%"></div>
       </div>
 
       <div class="card-footer">
-        <span class="status-pill ${status}-pill">${statusLabel(status)}</span>
-        <span class="trend">${trendStr()} vs. mes anterior</span>
+        <span class="status-pill ${estat}-pill">${etiquetaEstat(estat)}</span>
+        <span class="trend">${tendencia()} vs. mes anterior</span>
       </div>
     `;
 
-    grid.appendChild(card);
+    grid.appendChild(targeta);
   });
 
-  document.getElementById('cnt-ok').textContent = ok;
+  // Actualitzem els comptadors del resum
+  document.getElementById('cnt-ok').textContent   = ok;
   document.getElementById('cnt-warn').textContent = warn;
-  document.getElementById('cnt-bad').textContent = bad;
+  document.getElementById('cnt-bad').textContent  = bad;
 
-  const now = new Date();
+  // Mostrem el peu de pàgina amb servei i hora de l'última actualització
+  const ara = new Date();
   document.getElementById('ts').textContent =
-    `Servei: ${SERVEIS[servei]} · ${now.toLocaleDateString('ca-ES')} ${now.toLocaleTimeString('ca-ES', {hour:'2-digit', minute:'2-digit'})} · Dades simulades`;
+    `Servei: ${SERVEIS[servei]} · ${ara.toLocaleDateString('ca-ES')} ${ara.toLocaleTimeString('ca-ES', {hour:'2-digit', minute:'2-digit'})} · Dades simulades`;
 }
 
-refresh();
+// Càrrega inicial del visor
+actualitzar();
+
 </script>
