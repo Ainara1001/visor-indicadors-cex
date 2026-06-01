@@ -257,18 +257,18 @@ const SERVEIS = {
 
 // Definició dels 8 indicadors operatius (I1 a I6, amb I4 desglossada en 3 capes)
 // Cada indicador té un mode de càlcul d'estat:
-//   "min"   → com més alt millor (p.ex. compliment d'agenda)
-//   "max"   → com més baix millor (p.ex. forats buits)
-//   "range" → s'ha de mantenir dins d'un rang (p.ex. ocupació d'agenda 80-85%)
+// "min" → com més alt millor (p.ex. compliment d'agenda)
+// "max" → com més baix millor (p.ex. forats buits)
+// "range" → s'ha de mantenir dins d'un rang (p.ex. ocupació d'agenda 80-85%)
 const INDICADORS = [
-  { id:"I1",  nom:"Ocupació d'agenda",                    objectiu:80, objectiuLabel:"80% - 85%",       mode:"range", rangeMin:80,  rangeMax:85,  unit:"%", min:55, max:98 },
-  { id:"I2",  nom:"Compliment agenda prevista vs. real",  objectiu:90, objectiuLabel:"≥ 90%",           mode:"min",   unit:"%", min:65, max:99 },
-  { id:"I3",  nom:"Primeres visites rebutjades AP",       objectiu:15, objectiuLabel:"≥ 15%",           mode:"min",   unit:"%", min:5,  max:35 },
-  { id:"I4.1",nom:"Ocupació capa 1",                      objectiu:60, objectiuLabel:"rang reservat ±5%",mode:"range", rangeMin:55,  rangeMax:65,  unit:"%", min:35, max:85 },
-  { id:"I4.2",nom:"Ocupació capa 2",                      objectiu:30, objectiuLabel:"rang reservat ±5%",mode:"range", rangeMin:25,  rangeMax:35,  unit:"%", min:10, max:55 },
-  { id:"I4.3",nom:"Ocupació capa 3",                      objectiu:10, objectiuLabel:"rang reservat ±5%",mode:"range", rangeMin:5,   rangeMax:15,  unit:"%", min:0,  max:30 },
-  { id:"I5",  nom:"Forats buits no justificats",          objectiu:10, objectiuLabel:"≤ 10%",           mode:"max",   unit:"%", min:2,  max:28 },
-  { id:"I6",  nom:"Reprogramacions per manca de proves",  objectiu:5,  objectiuLabel:"≤ 5%",            mode:"max",   unit:"%", min:1,  max:18 }
+  { id:"I1",nom:"Ocupació d'agenda",objectiu:80, objectiuLabel:"80% - 85%",mode:"range", rangeMin:80,  rangeMax:85,  unit:"%", min:55, max:98 },
+  { id:"I2",nom:"Compliment agenda prevista vs. real",objectiu:90, objectiuLabel:"≥ 90%",mode:"min",   unit:"%", min:65, max:99 },
+  { id:"I3",nom:"Primeres visites rebutjades AP",objectiu:15, objectiuLabel:"≥ 15%",mode:"min",   unit:"%", min:5,  max:35 },
+  { id:"I4.1",nom:"Ocupació capa 1",objectiu:60, objectiuLabel:"rang reservat ±5%",mode:"range",rangeMin:55,  rangeMax:65,  unit:"%", min:35, max:85 },
+  { id:"I4.2",nom:"Ocupació capa 2",objectiu:30, objectiuLabel:"rang reservat ±5%",mode:"range",rangeMin:25,  rangeMax:35,  unit:"%", min:10, max:55 },
+  { id:"I4.3",nom:"Ocupació capa 3",objectiu:10, objectiuLabel:"rang reservat ±5%",mode:"range",rangeMin:5,   rangeMax:15,  unit:"%", min:0,  max:30 },
+  { id:"I5",nom:"Forats buits no justificats",objectiu:10, objectiuLabel:"≤ 10%",mode:"max",   unit:"%", min:2,  max:28 },
+  { id:"I6",nom:"Reprogramacions per manca de proves",objectiu:5,objectiuLabel:"≤ 5%",mode:"max",   unit:"%", min:1,  max:18 }
 ];
 
 // Genera un nombre enter aleatori entre min i max (inclusiu)
@@ -281,21 +281,21 @@ function obtenirEstat(ind, val) {
 
   // Mode "min": l'indicador ha de superar un valor mínim (com més alt millor)
   if (ind.mode === "min") {
-    if (val >= ind.objectiu)      return "ok";
+    if (val >= ind.objectiu) return "ok";
     if (val >= ind.objectiu - 10) return "warn";
     return "bad";
   }
 
   // Mode "max": l'indicador ha d'estar per sota d'un valor màxim (com més baix millor)
   if (ind.mode === "max") {
-    if (val <= ind.objectiu)     return "ok";
+    if (val <= ind.objectiu) return "ok";
     if (val <= ind.objectiu + 5) return "warn";
     return "bad";
   }
 
   // Mode "range": l'indicador ha de mantenir-se dins d'un rang definit (±tolerància)
   if (ind.mode === "range") {
-    if (val >= ind.rangeMin && val <= ind.rangeMax)         return "ok";
+    if (val >= ind.rangeMin && val <= ind.rangeMax) return "ok";
     if (val >= ind.rangeMin - 8 && val <= ind.rangeMax + 8) return "warn";
     return "bad";
   }
@@ -303,7 +303,7 @@ function obtenirEstat(ind, val) {
 
 // Retorna el text llegible de l'estat per mostrar a la targeta
 function etiquetaEstat(estat) {
-  if (estat === "ok")   return "Dins l'objectiu";
+  if (estat === "ok") return "Dins l'objectiu";
   if (estat === "warn") return "Atenció";
   return "Fora d'objectiu";
 }
@@ -349,9 +349,9 @@ function actualitzar() {
     const estat = obtenirEstat(ind, val);
 
     // Actualitzem els comptadors del resum global
-    if (estat === "ok")        ok++;
+    if (estat === "ok") ok++;
     else if (estat === "warn") warn++;
-    else                       bad++;
+    else bad++;
 
     const pct = percentatgeBarra(ind, val);
 
@@ -384,9 +384,9 @@ function actualitzar() {
   });
 
   // Actualitzem els comptadors del resum
-  document.getElementById('cnt-ok').textContent   = ok;
+  document.getElementById('cnt-ok').textContent = ok;
   document.getElementById('cnt-warn').textContent = warn;
-  document.getElementById('cnt-bad').textContent  = bad;
+  document.getElementById('cnt-bad').textContent = bad;
 
   // Mostrem el peu de pàgina amb servei i hora de l'última actualització
   const ara = new Date();
